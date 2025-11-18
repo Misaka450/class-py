@@ -809,13 +809,19 @@ function initCharts() {
                 },
                 title: {
                     display: true,
-                    text: selectedClass ? `${selectedClass} - 各科目平均分对比` : '所有班级 - 各科目平均分对比'
+                    text: selectedClass ? `${selectedClass} - 各科目平均分对比` : '所有班级 - 各科目平均分对比',
+                    font: {
+                        size: 16
+                    }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100
+                    max: 100,
+                    ticks: {
+                        stepSize: 20
+                    }
                 }
             }
         }
@@ -856,13 +862,19 @@ function initCharts() {
             plugins: {
                 title: {
                     display: true,
-                    text: selectedClass ? `${selectedClass} - 成绩趋势分析` : '所有班级 - 成绩趋势分析'
+                    text: selectedClass ? `${selectedClass} - 成绩趋势分析` : '所有班级 - 成绩趋势分析',
+                    font: {
+                        size: 16
+                    }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100
+                    max: 100,
+                    ticks: {
+                        stepSize: 20
+                    }
                 }
             }
         }
@@ -903,13 +915,19 @@ function initCharts() {
             plugins: {
                 title: {
                     display: true,
-                    text: selectedClass ? `${selectedClass} - 学生个体成绩趋势` : '所有班级 - 学生个体成绩趋势'
+                    text: selectedClass ? `${selectedClass} - 学生个体成绩趋势` : '所有班级 - 学生个体成绩趋势',
+                    font: {
+                        size: 16
+                    }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100
+                    max: 100,
+                    ticks: {
+                        stepSize: 20
+                    }
                 }
             }
         }
@@ -979,13 +997,19 @@ function initCharts() {
             plugins: {
                 title: {
                     display: true,
-                    text: '不同班级成绩对比'
+                    text: '不同班级成绩对比',
+                    font: {
+                        size: 16
+                    }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100
+                    max: 100,
+                    ticks: {
+                        stepSize: 20
+                    }
                 }
             }
         }
@@ -1026,7 +1050,13 @@ function initCharts() {
             plugins: {
                 title: {
                     display: true,
-                    text: selectedClass ? `${selectedClass} - 学科成绩关联性分析` : '所有班级 - 学科成绩关联性分析'
+                    text: selectedClass ? `${selectedClass} - 学科成绩关联性分析` : '所有班级 - 学科成绩关联性分析',
+                    font: {
+                        size: 16
+                    }
+                },
+                legend: {
+                    position: 'top'
                 }
             },
             scales: {

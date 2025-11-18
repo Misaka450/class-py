@@ -505,6 +505,7 @@ canvas {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     animation: fadeIn 0.3s;
+    overflow-y: auto;
 }
 
 .modal-content {
@@ -516,6 +517,8 @@ canvas {
     max-width: 500px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     animation: slideIn 0.3s;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 @keyframes fadeIn {
@@ -536,6 +539,9 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .modal-header h3 {
@@ -593,6 +599,8 @@ canvas {
     gap: 10px;
     justify-content: flex-end;
     margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
 }
 
 .import-instructions {
@@ -676,5 +684,10 @@ canvas {
     
     .tab-btn:last-child {
         border-bottom: none;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 2% auto;
     }
 }
