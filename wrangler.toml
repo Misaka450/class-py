@@ -1,6 +1,7 @@
 name = "elementary-grade-worker"
 main = "src/worker.py"
-compatibility_date = "2020-01-01"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["python_workers"]
 
 [vars]
 JWT_SECRET = "YOUR_HIGHLY_SECRET_KEY"
@@ -14,10 +15,8 @@ database_id = "2fd2778c-b7a1-4d87-bdba-799c23822d55"
 binding = "ASSET_BUCKET"
 bucket_name = "class-py"
 
-[[ai]]
+[ai]
 binding = "AI"
 
 [site]
 bucket = "./dist"
-
-compatibility_flags = ["python_workers"]

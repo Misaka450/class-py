@@ -1,3 +1,8 @@
+// 全局变量
+let currentPage = 1;
+const itemsPerPage = 10;
+let gradesData = [];
+
 // 用户认证和页面导航
 document.addEventListener('DOMContentLoaded', function() {
     // 检查是否已登录
@@ -16,31 +21,56 @@ document.addEventListener('DOMContentLoaded', function() {
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         
-        // 简单的认证检查（实际项目中应该发送到服务器验证）
-        if ((username === 'teacher' && password === 'teacher123') || 
-            (username === 'admin' && password === 'admin123')) {
-            // 保存认证令牌
-            localStorage.setItem('authToken', 'authenticated');
-            // 显示主内容区域
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
-            document.getElementById('user-info').style.display = 'flex';
-            document.getElementById('current-user').textContent = username === 'admin' ? '管理员' : '教师用户';
-            // 加载默认页面
-            loadGradesPage();
-        } else {
-            alert('用户名或密码错误！');
-        }
+        // 发送登录请求到后端
+        fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.token) {
+                // 保存认证令牌
+                localStorage.setItem('authToken', data.token);
+                // 显示主内容区域
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                document.getElementById('user-info').style.display = 'flex';
+                document.getElementById('current-user').textContent = username === 'admin' ? '管理员' : '教师用户';
+                // 加载默认页面
+                loadGradesPage();
+            } else {
+                alert('用户名或密码错误！');
+            }
+        })
+        .catch(error => {
+            console.error('登录错误:', error);
+            alert('登录失败，请稍后重试！');
+        });
     });
 
     // 退出登录
     document.getElementById('logout-link').addEventListener('click', function() {
-        localStorage.removeItem('authToken');
-        document.getElementById('main-content').style.display = 'none';
-        document.getElementById('user-info').style.display = 'none';
-        document.getElementById('login-section').style.display = 'block';
-        // 重置表单
-        document.getElementById('login-form').reset();
+        // 发送登出请求到后端
+        fetch('/api/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('authToken')
+            }
+        })
+        .then(() => {
+            localStorage.removeItem('authToken');
+            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('user-info').style.display = 'none';
+            document.getElementById('login-section').style.display = 'block';
+            // 重置表单
+            document.getElementById('login-form').reset();
+        });
     });
 
     // 导航链接事件监听
@@ -116,42 +146,7 @@ function loadGradesPage() {
                     </tr>
                 </thead>
                 <tbody id="grades-table-body">
-                    <tr>
-                        <td>张小明</td>
-                        <td>2023001</td>
-                        <td>三年级一班</td>
-                        <td>数学</td>
-                        <td>95</td>
-                        <td>2023-06-15</td>
-                        <td>
-                            <button class="edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                            <button class="delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>李小红</td>
-                        <td>2023002</td>
-                        <td>三年级一班</td>
-                        <td>语文</td>
-                        <td>88</td>
-                        <td>2023-06-15</td>
-                        <td>
-                            <button class="edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                            <button class="delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>王小刚</td>
-                        <td>2023003</td>
-                        <td>三年级一班</td>
-                        <td>英语</td>
-                        <td>92</td>
-                        <td>2023-06-15</td>
-                        <td>
-                            <button class="edit-btn"><i class="fas fa-edit"></i> 编辑</button>
-                            <button class="delete-btn"><i class="fas fa-trash"></i> 删除</button>
-                        </td>
-                    </tr>
+                    <!-- 成绩数据将通过API加载 -->
                 </tbody>
             </table>
         </div>
@@ -163,11 +158,69 @@ function loadGradesPage() {
         </div>
     `;
     
+    // 加载成绩数据
+    loadGradesData();
+    
     // 添加事件监听器
     document.getElementById('add-grade-btn').addEventListener('click', showAddGradeModal);
     document.getElementById('import-grades-btn').addEventListener('click', showImportGradesModal);
     document.getElementById('apply-filters').addEventListener('click', applyGradeFilters);
     document.getElementById('reset-filters').addEventListener('click', resetGradeFilters);
+}
+
+// 加载成绩数据
+function loadGradesData() {
+    // 这里应该从后端API获取数据
+    // 暂时使用模拟数据
+    gradesData = [
+        { id: 1, name: '张小明', studentId: '2023001', class: '三年级一班', subject: '数学', score: 95, examDate: '2023-06-15' },
+        { id: 2, name: '李小红', studentId: '2023002', class: '三年级一班', subject: '语文', score: 88, examDate: '2023-06-15' },
+        { id: 3, name: '王小刚', studentId: '2023003', class: '三年级一班', subject: '英语', score: 92, examDate: '2023-06-15' },
+        { id: 4, name: '赵小丽', studentId: '2023004', class: '三年级一班', subject: '数学', score: 87, examDate: '2023-06-15' },
+        { id: 5, name: '刘小强', studentId: '2023005', class: '三年级一班', subject: '语文', score: 90, examDate: '2023-06-15' },
+        { id: 6, name: '陈小美', studentId: '2023006', class: '三年级一班', subject: '英语', score: 85, examDate: '2023-06-15' },
+        { id: 7, name: '杨小军', studentId: '2023007', class: '三年级一班', subject: '数学', score: 93, examDate: '2023-06-15' }
+    ];
+    
+    renderGradesTable();
+}
+
+// 渲染成绩表格
+function renderGradesTable() {
+    const tableBody = document.getElementById('grades-table-body');
+    tableBody.innerHTML = '';
+    
+    gradesData.forEach(grade => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${grade.name}</td>
+            <td>${grade.studentId}</td>
+            <td>${grade.class}</td>
+            <td>${grade.subject}</td>
+            <td>${grade.score}</td>
+            <td>${grade.examDate}</td>
+            <td>
+                <button class="edit-btn" data-id="${grade.id}"><i class="fas fa-edit"></i> 编辑</button>
+                <button class="delete-btn" data-id="${grade.id}"><i class="fas fa-trash"></i> 删除</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+    
+    // 添加编辑和删除按钮事件监听器
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            editGrade(id);
+        });
+    });
+    
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            deleteGrade(id);
+        });
+    });
 }
 
 // 加载数据分析页面

@@ -26,11 +26,6 @@ users_db = {
     }
 }
 
-# 模拟数据库表结构
-classes_db = {}
-students_db = {}
-grades_db = {}
-
 def hash_password(password):
     """对密码进行哈希处理"""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -125,88 +120,139 @@ def require_auth(handler):
     
     return wrapper
 
-# 数据库操作函数
-def create_class(class_id, grade_level, class_name):
+# D1数据库操作函数
+def create_class(env, class_id, grade_level, class_name):
     """创建班级"""
-    classes_db[class_id] = {
-        'id': class_id,
-        'grade_level': grade_level,
-        'class_name': class_name
-    }
-    return classes_db[class_id]
-
-def get_class(class_id):
-    """获取班级信息"""
-    return classes_db.get(class_id)
-
-def create_student(student_id, name, student_number, class_id):
-    """创建学生"""
-    students_db[student_id] = {
-        'id': student_id,
-        'name': name,
-        'student_id': student_number,
-        'class_id': class_id
-    }
-    return students_db[student_id]
-
-def get_student(student_id):
-    """获取学生信息"""
-    return students_db.get(student_id)
-
-def get_students_by_class(class_id):
-    """根据班级ID获取学生列表"""
-    return [student for student in students_db.values() if student['class_id'] == class_id]
-
-def create_grade(grade_id, student_id, subject, score, exam_date, exam_name, teacher_id):
-    """创建成绩记录"""
-    grades_db[grade_id] = {
-        'id': grade_id,
-        'student_id': student_id,
-        'subject': subject,
-        'score': score,
-        'exam_date': exam_date,
-        'exam_name': exam_name,
-        'teacher_id': teacher_id
-    }
-    return grades_db[grade_id]
-
-def get_grade(grade_id):
-    """获取成绩记录"""
-    return grades_db.get(grade_id)
-
-def get_grades_by_student(student_id):
-    """根据学生ID获取成绩列表"""
-    return [grade for grade in grades_db.values() if grade['student_id'] == student_id]
-
-def get_grades_by_class_and_exam(class_id, exam_name):
-    """根据班级ID和考试名称获取成绩列表"""
-    # 先获取班级中的所有学生
-    students = get_students_by_class(class_id)
-    student_ids = [student['id'] for student in students]
+    db = env['DB']
+    query = """
+        INSERT INTO classes (id, grade_level, class_name) 
+        VALUES (?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET 
+            grade_level = excluded.grade_level,
+            class_name = excluded.class_name
+    """
+    db.prepare(query).bind(class_id, grade_level, class_name).run()
     
-    # 返回这些学生的指定考试成绩
-    return [grade for grade in grades_db.values() 
-            if grade['student_id'] in student_ids and grade['exam_name'] == exam_name]
+    # 查询并返回创建的班级
+    result = db.prepare("SELECT * FROM classes WHERE id = ?").bind(class_id).all()
+    return result[0] if result else None
 
-def update_grade(grade_id, subject=None, score=None, exam_date=None, exam_name=None):
+def get_class(env, class_id):
+    """获取班级信息"""
+    db = env['DB']
+    result = db.prepare("SELECT * FROM classes WHERE id = ?").bind(class_id).first()
+    return result
+
+def create_student(env, student_id, name, student_number, class_id):
+    """创建学生"""
+    db = env['DB']
+    query = """
+        INSERT INTO students (id, name, student_number, class_id) 
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET 
+            name = excluded.name,
+            student_number = excluded.student_number,
+            class_id = excluded.class_id
+    """
+    db.prepare(query).bind(student_id, name, student_number, class_id).run()
+    
+    # 查询并返回创建的学生
+    result = db.prepare("SELECT * FROM students WHERE id = ?").bind(student_id).all()
+    return result[0] if result else None
+
+def get_student(env, student_id):
+    """获取学生信息"""
+    db = env['DB']
+    result = db.prepare("SELECT * FROM students WHERE id = ?").bind(student_id).first()
+    return result
+
+def get_students_by_class(env, class_id):
+    """根据班级ID获取学生列表"""
+    db = env['DB']
+    result = db.prepare("SELECT * FROM students WHERE class_id = ?").bind(class_id).all()
+    return result
+
+def create_grade(env, grade_id, student_id, subject, score, exam_date, exam_name, teacher_id):
+    """创建成绩记录"""
+    db = env['DB']
+    query = """
+        INSERT INTO grades (id, student_id, subject, score, exam_date, exam_name, teacher_id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET 
+            student_id = excluded.student_id,
+            subject = excluded.subject,
+            score = excluded.score,
+            exam_date = excluded.exam_date,
+            exam_name = excluded.exam_name,
+            teacher_id = excluded.teacher_id
+    """
+    db.prepare(query).bind(grade_id, student_id, subject, score, exam_date, exam_name, teacher_id).run()
+    
+    # 查询并返回创建的成绩记录
+    result = db.prepare("SELECT * FROM grades WHERE id = ?").bind(grade_id).all()
+    return result[0] if result else None
+
+def get_grade(env, grade_id):
+    """获取成绩记录"""
+    db = env['DB']
+    result = db.prepare("SELECT * FROM grades WHERE id = ?").bind(grade_id).first()
+    return result
+
+def get_grades_by_student(env, student_id):
+    """根据学生ID获取成绩列表"""
+    db = env['DB']
+    result = db.prepare("SELECT * FROM grades WHERE student_id = ? ORDER BY exam_date").bind(student_id).all()
+    return result
+
+def get_grades_by_class_and_exam(env, class_id, exam_name):
+    """根据班级ID和考试名称获取成绩列表"""
+    db = env['DB']
+    query = """
+        SELECT g.*, s.name as student_name, s.student_number 
+        FROM grades g 
+        JOIN students s ON g.student_id = s.id 
+        WHERE s.class_id = ? AND g.exam_name = ?
+        ORDER BY s.name
+    """
+    result = db.prepare(query).bind(class_id, exam_name).all()
+    return result
+
+def update_grade(env, grade_id, subject=None, score=None, exam_date=None, exam_name=None):
     """更新成绩记录"""
-    if grade_id in grades_db:
-        grade = grades_db[grade_id]
-        if subject is not None:
-            grade['subject'] = subject
-        if score is not None:
-            grade['score'] = score
-        if exam_date is not None:
-            grade['exam_date'] = exam_date
-        if exam_name is not None:
-            grade['exam_name'] = exam_name
-        return grade
-    return None
+    db = env['DB']
+    
+    # 构建动态更新查询
+    updates = []
+    params = []
+    
+    if subject is not None:
+        updates.append("subject = ?")
+        params.append(subject)
+    if score is not None:
+        updates.append("score = ?")
+        params.append(score)
+    if exam_date is not None:
+        updates.append("exam_date = ?")
+        params.append(exam_date)
+    if exam_name is not None:
+        updates.append("exam_name = ?")
+        params.append(exam_name)
+    
+    if updates:
+        query = f"UPDATE grades SET {', '.join(updates)} WHERE id = ?"
+        params.append(grade_id)
+        db.prepare(query).bind(*params).run()
+    
+    # 返回更新后的记录
+    return get_grade(env, grade_id)
 
-def delete_grade(grade_id):
+def delete_grade(env, grade_id):
     """删除成绩记录"""
-    if grade_id in grades_db:
-        return grades_db.pop(grade_id)
+    db = env['DB']
+    result = get_grade(env, grade_id)
+    if result:
+        db.prepare("DELETE FROM grades WHERE id = ?").bind(grade_id).run()
+        return result
     return None
 
 # API处理函数
@@ -223,6 +269,12 @@ def on_request_grades(env, request):
     elif request.method == 'GET':
         # 查询班级成绩
         return on_get_class_grades(env, request, user)
+    elif request.method == 'PUT':
+        # 更新成绩
+        return on_put_grade(env, request, user)
+    elif request.method == 'DELETE':
+        # 删除成绩
+        return on_delete_grade(env, request, user)
     else:
         return {
             'status': 405,
@@ -255,9 +307,10 @@ def on_post_grade(env, request, user):
             }
     
     # 创建学生（如果不存在）
-    student = get_student(data['student_id'])
+    student = get_student(env, data['student_id'])
     if not student:
         student = create_student(
+            env,
             data['student_id'],
             data['student_name'],
             data['student_id'],
@@ -267,6 +320,7 @@ def on_post_grade(env, request, user):
     # 创建成绩记录
     grade_id = str(uuid.uuid4())
     grade = create_grade(
+        env,
         grade_id,
         data['student_id'],
         data['subject'],
@@ -280,6 +334,93 @@ def on_post_grade(env, request, user):
         'status': 201,
         'headers': {'Content-Type': 'application/json'},
         'body': json.dumps({'success': True, 'grade': grade})
+    }
+
+def on_put_grade(env, request, user):
+    """处理更新成绩请求"""
+    role = user['role']
+    if role not in ['teacher', 'admin']:
+        return {
+            'status': 403,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Permission denied'})
+        }
+    
+    # 解析URL获取成绩ID
+    url = request.url
+    path_parts = url.split('/')
+    if len(path_parts) < 5:
+        return {
+            'status': 400,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Missing grade ID in URL'})
+        }
+    
+    grade_id = path_parts[4]  # /api/grades/<GRADE_ID>
+    
+    # 解析请求体
+    body = request.body.read().decode('utf-8')
+    data = json.loads(body) if body else {}
+    
+    # 更新成绩记录
+    grade = update_grade(
+        env,
+        grade_id,
+        subject=data.get('subject'),
+        score=float(data['score']) if 'score' in data else None,
+        exam_date=data.get('exam_date'),
+        exam_name=data.get('exam_name')
+    )
+    
+    if not grade:
+        return {
+            'status': 404,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Grade not found'})
+        }
+    
+    return {
+        'status': 200,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps({'success': True, 'grade': grade})
+    }
+
+def on_delete_grade(env, request, user):
+    """处理删除成绩请求"""
+    role = user['role']
+    if role not in ['teacher', 'admin']:
+        return {
+            'status': 403,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Permission denied'})
+        }
+    
+    # 解析URL获取成绩ID
+    url = request.url
+    path_parts = url.split('/')
+    if len(path_parts) < 5:
+        return {
+            'status': 400,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Missing grade ID in URL'})
+        }
+    
+    grade_id = path_parts[4]  # /api/grades/<GRADE_ID>
+    
+    # 删除成绩记录
+    grade = delete_grade(env, grade_id)
+    
+    if not grade:
+        return {
+            'status': 404,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Grade not found'})
+        }
+    
+    return {
+        'status': 200,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps({'success': True, 'deleted_grade': grade})
     }
 
 def on_get_class_grades(env, request, user):
@@ -310,22 +451,12 @@ def on_get_class_grades(env, request, user):
         }
     
     # 获取成绩数据
-    grades = get_grades_by_class_and_exam(class_id, exam_name)
-    
-    # 补充学生信息
-    result_grades = []
-    for grade in grades:
-        student = get_student(grade['student_id'])
-        if student:
-            result_grade = grade.copy()
-            result_grade['student_name'] = student['name']
-            result_grade['student_number'] = student['student_id']
-            result_grades.append(result_grade)
+    grades = get_grades_by_class_and_exam(env, class_id, exam_name)
     
     return {
         'status': 200,
         'headers': {'Content-Type': 'application/json'},
-        'body': json.dumps({'grades': result_grades})
+        'body': json.dumps({'grades': grades})
     }
 
 # Excel模板生成和导入功能
@@ -419,9 +550,10 @@ def on_request_import_grades(env, request):
             data = dict(zip(headers, values))
             
             # 创建学生（如果不存在）
-            student = get_student(data['学号'])
+            student = get_student(env, data['学号'])
             if not student:
                 student = create_student(
+                    env,
                     data['学号'],
                     data['学生姓名'],
                     data['学号'],
@@ -431,6 +563,7 @@ def on_request_import_grades(env, request):
             # 创建成绩记录
             grade_id = str(uuid.uuid4())
             grade = create_grade(
+                env,
                 grade_id,
                 data['学号'],
                 data['科目'],
@@ -486,7 +619,7 @@ def on_request_analysis_class(env, request):
     class_id = path_parts[7]  # /api/analysis/class/<CLASS_ID>
     
     # 获取班级信息
-    class_info = get_class(class_id)
+    class_info = get_class(env, class_id)
     if not class_info:
         return {
             'status': 404,
@@ -495,7 +628,7 @@ def on_request_analysis_class(env, request):
         }
     
     # 获取班级中的所有学生
-    students = get_students_by_class(class_id)
+    students = get_students_by_class(env, class_id)
     if not students:
         return {
             'status': 404,
@@ -506,7 +639,7 @@ def on_request_analysis_class(env, request):
     # 获取所有学生的最新成绩（按科目分组）
     subject_scores = {}
     for student in students:
-        student_grades = get_grades_by_student(student['id'])
+        student_grades = get_grades_by_student(env, student['id'])
         # 按科目分组，保留最新成绩
         latest_grades = {}
         for grade in student_grades:
@@ -571,7 +704,7 @@ def on_request_analysis_student_longitudinal(env, request):
         }
     
     # 获取学生信息
-    student = get_student(student_id)
+    student = get_student(env, student_id)
     if not student:
         return {
             'status': 404,
@@ -580,7 +713,7 @@ def on_request_analysis_student_longitudinal(env, request):
         }
     
     # 获取学生的所有成绩记录
-    grades = get_grades_by_student(student_id)
+    grades = get_grades_by_student(env, student_id)
     if not grades:
         return {
             'status': 404,
@@ -668,7 +801,7 @@ def on_request_analysis_comparison(env, request):
         }
     
     # 获取班级信息
-    class_info = get_class(class_id)
+    class_info = get_class(env, class_id)
     if not class_info:
         return {
             'status': 404,
@@ -677,7 +810,7 @@ def on_request_analysis_comparison(env, request):
         }
     
     # 获取班级成绩
-    class_grades = get_grades_by_class_and_exam(class_id, exam_name)
+    class_grades = get_grades_by_class_and_exam(env, class_id, exam_name)
     if not class_grades:
         return {
             'status': 404,
@@ -722,7 +855,7 @@ def on_request_analysis_comparison(env, request):
     
     # 添加学生详细信息
     for student_id, average in student_averages.items():
-        student = get_student(student_id)
+        student = get_student(env, student_id)
         if student:
             comparison_result['student_details'].append({
                 'student_id': student_id,
@@ -780,7 +913,7 @@ def on_request_analysis_correlation(env, request):
         }
     
     # 获取班级信息
-    class_info = get_class(class_id)
+    class_info = get_class(env, class_id)
     if not class_info:
         return {
             'status': 404,
@@ -789,7 +922,7 @@ def on_request_analysis_correlation(env, request):
         }
     
     # 获取班级中的所有学生
-    students = get_students_by_class(class_id)
+    students = get_students_by_class(env, class_id)
     if not students:
         return {
             'status': 404,
@@ -801,7 +934,7 @@ def on_request_analysis_correlation(env, request):
     student_scores = {}
     for student in students:
         student_id = student['id']
-        grades = get_grades_by_student(student_id)
+        grades = get_grades_by_student(env, student_id)
         
         # 找到指定科目的成绩
         subject1_score = None
